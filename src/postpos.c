@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------------
+﻿/*------------------------------------------------------------------------------
 * postpos.c : post-processing positioning
 *
 *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
@@ -249,7 +249,14 @@ static void update_rtcm_ssr(gtime_t time)
         }
     }
 }
-/* input obs data, navigation messages and sbas correction -------------------*/
+
+/// @brief 输入观测数据，导航信息和改正 \n
+///        input obs data, navigation messages and sbas correction
+/// @param obs 
+/// @param solq 
+/// @param popt 
+/// @return
+/// @details 核心：obss。obss的数据将传递给obs。
 static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
 {
     gtime_t time={0};
@@ -275,7 +282,7 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
             /* if not interpolating, find closest timestamp */
             dt=timediff(obss.data[iobsr].time,obss.data[iobsu].time);
             for (i=iobsr;(nr=nextobsf(&obss,&i,2))>0;iobsr=i,i+=nr) {
-                dt_next=timediff(obss.data[i].time,obss.data[iobsu].time);
+				dt_next=timediff(obss.data[i].time,obss.data[iobsu].time);
                 if (fabs(dt_next)>fabs(dt)) break;
                 dt=dt_next;
             }
@@ -284,8 +291,8 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
         if (nr<=0) {
             nr=nextobsf(&obss,&iobsr,2);
         }
-        for (i=0;i<nu&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsu+i];
-        for (i=0;i<nr&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsr+i];
+		for (i=0;i<nu&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsu+i];
+		for (i=0;i<nr&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsr+i];
         iobsu+=nu;
 
         /* update sbas corrections */
@@ -320,7 +327,7 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
             }
         }
         nr=nextobsb(&obss,&iobsr,2);
-        for (i=0;i<nu&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsu-nu+1+i];
+		for (i=0;i<nu&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsu-nu+1+i];
         for (i=0;i<nr&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsr-nr+1+i];
         iobsu-=nu;
 
@@ -409,8 +416,20 @@ static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav)
     }
 }
 /* process positioning -------------------------------------------------------*/
+
+/// @brief 定位解算
+///        process positioning
+/// @param fp 
+/// @param fptm 
+/// @param popt 
+/// @param sopt 
+/// @param rtk 
+/// @param mode
+/// @return
+/// @details 核心的函数有两个。inputobs：输入数据和 rtkpos：精确定位
+/// @see inputobs rtkpos
 static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *sopt,
-                    rtk_t *rtk, int mode)
+					rtk_t *rtk, int mode)
 {
     gtime_t time={0};
     sol_t sol={{0}},oldsol={{0}},newsol={{0}};
@@ -423,22 +442,22 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
     solstatic=sopt->solstatic&&
               (popt->mode==PMODE_STATIC||popt->mode==PMODE_STATIC_START||popt->mode==PMODE_PPP_STATIC);
     
-    rtcm_path[0]='\0';
+	rtcm_path[0]='\0';
 
-    while ((nobs=inputobs(obs_ptr,rtk->sol.stat,popt))>=0) {
+	while ((nobs=inputobs(obs_ptr,rtk->sol.stat,popt))>=0) {
 
         /* exclude satellites */
-        for (i=n=0;i<nobs;i++) {
-            if ((satsys(obs_ptr[i].sat,NULL)&popt->navsys)&&
+		for (i=n=0;i<nobs;i++) {
+			if ((satsys(obs_ptr[i].sat,NULL)&popt->navsys)&&
                 popt->exsats[obs_ptr[i].sat-1]!=1) obs_ptr[n++]= obs_ptr[i];
         }
-        if (n<=0) continue;
+		if (n<=0) continue;
 
         /* carrier-phase bias correction */
-        if (!strstr(popt->pppopt,"-ENA_FCB")) {
+		if (!strstr(popt->pppopt,"-ENA_FCB")) {
             corr_phase_bias_ssr(obs_ptr,n,&navs);
         }
-        if (!rtkpos(rtk, obs_ptr,n,&navs)) {
+		if (!rtkpos(rtk, obs_ptr,n,&navs)) {
             if (rtk->sol.eventime.time != 0) {
                 if (mode == SOLMODE_SINGLE_DIR) {
                     outinvalidtm(fptm, sopt, rtk->sol.eventime);
@@ -713,7 +732,22 @@ static void freepreceph(nav_t *nav, sbs_t *sbs)
     if (fp_rtcm) fclose(fp_rtcm);
     free_rtcm(&rtcm);
 }
-/* read obs and nav data -----------------------------------------------------*/
+
+/// @brief 读取观测数据和导航电文数据 \n
+///        read obs and nav data
+/// @param ts 
+/// @param te 
+/// @param ti 
+/// @param infile 
+/// @param index 
+/// @param n 
+/// @param prcopt 
+/// @param obs 
+/// @param nav 
+/// @param sta 
+/// @return 
+/// @details 核心：readrnxt：读取观测文件和导航电文
+/// @see readrnxt
 static int readobsnav(gtime_t ts, gtime_t te, double ti, const char **infile,
                       const int *index, int n, const prcopt_t *prcopt,
                       obs_t *obs, nav_t *nav, sta_t *sta)
@@ -1041,7 +1075,25 @@ static void namefiletm(char *outfiletm, const char *outfile)
     strncpy(outfiletm, outfile, i);
     strcat(outfiletm, "_events.pos");
 }
-/* execute processing session ------------------------------------------------*/
+
+/// @brief 执行处理会话
+///        execute processing session
+/// @param ts 
+/// @param te 
+/// @param ti 
+/// @param popt 
+/// @param sopt 
+/// @param fopt 
+/// @param flag 
+/// @param infile 
+/// @param index 
+/// @param n 
+/// @param outfile 
+/// @return
+/// @details 核心：readobsnav：读取观测数据和导航电文数据
+/// @see readobsnav
+/// @details 核心：procpos：定位解算
+/// @see procpos
 static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                    const solopt_t *sopt, const filopt_t *fopt, int flag,
                    const char **infile, const int *index, int n, const char *outfile)
@@ -1230,6 +1282,22 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     return aborts?1:0;
 }
 /* execute processing session for each rover ---------------------------------*/
+
+/// @brief 为每个观测者执行处理会话 \n
+///        execute processing session for each rover
+/// @param ts 
+/// @param te 
+/// @param ti 
+/// @param popt 
+/// @param sopt 
+/// @param fopt 
+/// @param flag 
+/// @param infile 
+/// @param index 
+/// @param n 
+/// @param outfile 
+/// @param rov 
+/// @return 
 static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                      const solopt_t *sopt, const filopt_t *fopt, int flag,
                      const char **infile, const int *index, int n, const char *outfile,
@@ -1280,7 +1348,23 @@ static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     }
     return stat;
 }
-/* execute processing session for each base station --------------------------*/
+
+/// @brief 为每个基站执行处理会话 \n
+///        execute processing session for each base station
+/// @param ts 
+/// @param te 
+/// @param ti 
+/// @param popt 
+/// @param sopt 
+/// @param fopt 
+/// @param flag 
+/// @param infile 
+/// @param index 
+/// @param n 
+/// @param outfile 
+/// @param rov 
+/// @param base 
+/// @return 
 static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                      const solopt_t *sopt, const filopt_t *fopt, int flag,
                      const char **infile, const int *index, int n, const char *outfile,
@@ -1382,6 +1466,23 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 *
 *          ssr corrections are valid only for forward estimation.
 *-----------------------------------------------------------------------------*/
+
+/// @brief 定位的事后处理 \n
+///        post-processing positioning
+/// @param ts 
+/// @param te 
+/// @param ti 
+/// @param tu 
+/// @param popt 
+/// @param sopt
+/// @param fopt 文件操作 \n
+///             file options
+/// @param infile 
+/// @param n 
+/// @param outfile 
+/// @param rov 
+/// @param base 
+/// @return 
 extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                    const prcopt_t *popt, const solopt_t *sopt,
                    const filopt_t *fopt, const char **infile, int n, const char *outfile,

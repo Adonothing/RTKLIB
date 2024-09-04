@@ -6,10 +6,14 @@
 *.local
 Release
 Release_Build
+release_build
 Debug
 Debug_Build
+debug_build
 __history
 __astcache
+__recovery
+html
 
 # Ignore compilation results
 
@@ -58,3 +62,9 @@ app/qtapp/packaging/packages/**.exe
 app/qtapp/packaging/packages/*/data
 app/qtapp/packaging/packages/com.rtklib/meta/license.txt
 app/qtapp/packaging/packages/RtkLibInstaller.exe
+
+# app源码编译调用
+app/bin
+
+# 忽略SPP测试文件
+test/spp

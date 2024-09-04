@@ -1744,6 +1744,11 @@ extern void outsolhead(FILE *fp, const solopt_t *opt)
 *          solopt_t *opt    I   solution options
 * return : none
 *-----------------------------------------------------------------------------*/
+
+/// @brief 输出结果主体 \n
+///        output solution body
+/// @details 向文件中输出结果主体 \n
+///          output solution body to file
 extern void outsol(FILE *fp, const sol_t *sol, const double *rb,
                    const solopt_t *opt)
 {

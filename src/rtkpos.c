@@ -2270,6 +2270,16 @@ extern void rtkfree(rtk_t *rtk)
 * notes  : before calling function, base station position rtk->sol.rb[] should
 *          be properly set for relative mode except for moving-baseline
 *-----------------------------------------------------------------------------*/
+
+/// @brief 精确定位 \n
+///        precise positioning
+/// @details 输入观测数据和导航信息，通过精确定位计算观测者位置 \n
+///          input observation data and navigation message, compute rover position by precise positioning
+/// @param rtk 
+/// @param obs 
+/// @param n 
+/// @param nav 
+/// @return 
 extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
 {
     prcopt_t *opt=&rtk->opt;

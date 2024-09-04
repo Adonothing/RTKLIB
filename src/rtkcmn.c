@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------------
+﻿/*------------------------------------------------------------------------------
 * rtkcmn.c : rtklib common functions
 *
 *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
@@ -255,8 +255,12 @@ const char *formatstrs[32]={    /* stream format strings */
     NULL
 };
 
-static char *obscodes[]={       /* observation code strings */
-
+/// @brief 观测代码字符串 \n
+///        observation code strings
+/// @details 对应观测文件中的：SYS / # / OBS TYPES。
+///          我们会按照这个顺序重新排序观测值，然后存放到数组里。
+static char *obscodes[] =
+{
     ""  ,"1C","1P","1W","1Y", "1M","1N","1S","1L","1E", /*  0- 9 */
     "1A","1B","1X","1Z","2C", "2D","2S","2L","2X","2P", /* 10-19 */
     "2W","2Y","2M","2N","5I", "5Q","5X","7I","7Q","7X", /* 20-29 */
@@ -265,6 +269,7 @@ static char *obscodes[]={       /* observation code strings */
     "5B","5C","9A","9B","9C", "9X","1D","5D","5P","5Z", /* 50-59 */
     "6E","7D","7P","7Z","8D", "8P","4A","4B","4X",""    /* 60-69 */
 };
+
 static char codepris[7][MAXFREQ][16]={  /* code priority for each freq-index */
     /* L1/E1/B1 L2/E5b/B2b L5/E5a/B2a E6/LEX/B3 E5(a+b)         */
     {"CPYWMNSLX","CPYWMNDLSX","IQX"     ,""       ,""       ,""}, /* GPS */
@@ -394,19 +399,23 @@ extern void add_fatal(fatalfunc_t *func)
 *          int    prn       I   satellite prn/slot number
 * return : satellite number (0:error)
 *-----------------------------------------------------------------------------*/
+
+/// @brief 卫星系统+prn转卫星编号
+/// @details 卫星按照 GPS、GLO、GAL···依次编号
+/// @details 将字母和数字编号转化为纯数字编号
 extern int satno(int sys, int prn)
 {
     if (prn<=0) return 0;
     switch (sys) {
         case SYS_GPS:
             if (prn<MINPRNGPS||MAXPRNGPS<prn) return 0;
-            return prn-MINPRNGPS+1;
+			return prn-MINPRNGPS+1;
         case SYS_GLO:
             if (prn<MINPRNGLO||MAXPRNGLO<prn) return 0;
-            return NSATGPS+prn-MINPRNGLO+1;
+			return NSATGPS+prn-MINPRNGLO+1;
         case SYS_GAL:
             if (prn<MINPRNGAL||MAXPRNGAL<prn) return 0;
-            return NSATGPS+NSATGLO+prn-MINPRNGAL+1;
+			return NSATGPS+NSATGLO+prn-MINPRNGAL+1;
         case SYS_QZS:
             if (prn<MINPRNQZS||MAXPRNQZS<prn) return 0;
             return NSATGPS+NSATGLO+NSATGAL+prn-MINPRNQZS+1;
@@ -425,7 +434,7 @@ extern int satno(int sys, int prn)
             return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATLEO+
                    prn-MINPRNSBS+1;
     }
-    return 0;
+	return 0;
 }
 /* satellite number to satellite system ----------------------------------------
 * convert satellite number to satellite system
@@ -433,6 +442,15 @@ extern int satno(int sys, int prn)
 *          int    *prn      IO  satellite prn/slot number (NULL: no output)
 * return : satellite system (SYS_GPS,SYS_GLO,...)
 *-----------------------------------------------------------------------------*/
+
+/// @brief 将卫星编号转换为卫星系统 \n
+///        convert satellite number to satellite system
+/// @param [in] sat 卫星编号 \n
+///                 satellite number (1-MAXSAT)
+/// @param [in,out] prn 卫星伪随机噪声编号 \n
+///                     satellite prn/slot number (NULL: no output)
+/// @return 卫星系统 (SYS_GPS,SYS_GLO,...) \n
+///         satellite system (SYS_GPS,SYS_GLO,...)
 extern int satsys(int sat, int *prn)
 {
     int sys=SYS_NONE;
@@ -471,6 +489,10 @@ extern int satsys(int sat, int *prn)
 * return : satellite number (0: error)
 * notes  : 120-142 and 193-199 are also recognized as sbas and qzss
 *-----------------------------------------------------------------------------*/
+
+/// @brief 卫星id转卫星编号
+/// @details 卫星按照 GPS、GLO、GAL···依次编号
+/// @details 将字母和数字编号转化为纯数字编号
 extern int satid2no(const char *id)
 {
     int sys,prn;
@@ -558,6 +580,15 @@ extern int satexclude(int sat, double var, int svh, const prcopt_t *opt)
 *          snrmask_t *mask  I   SNR mask
 * return : status (1:masked,0:unmasked)
 *-----------------------------------------------------------------------------*/
+
+/// @brief 测试信噪比掩模
+///        test SNR mask
+/// @param base 
+/// @param idx 
+/// @param el 
+/// @param snr 
+/// @param mask 
+/// @return 
 extern int testsnr(int base, int idx, double el, double snr,
                    const snrmask_t *mask)
 {
@@ -568,10 +599,13 @@ extern int testsnr(int base, int idx, double el, double snr,
 
     a=(el*R2D+5.0)/10.0;
     i=(int)floor(a); a-=i;
+
+    // 计算最小信噪比
     if      (i<1) minsnr=mask->mask[idx][0];
     else if (i>8) minsnr=mask->mask[idx][8];
-    else minsnr=(1.0-a)*mask->mask[idx][i-1]+a*mask->mask[idx][i];
+    else minsnr=(1.0-a)*mask->mask[idx][i-1]+a*mask->mask[idx][i];  // 线性插值
 
+    // 小于最小信噪比，将认为信号无效
     return snr<minsnr;
 }
 /* obs type string to obs code -------------------------------------------------
@@ -1415,6 +1449,16 @@ extern int solve(const char *tr, const double *A, const double *Y, int n,
 * notes  : for weighted least square, replace A and y by A*w and w*y (w=W^(1/2))
 *          matrix stored by column-major order (fortran convention)
 *-----------------------------------------------------------------------------*/
+
+/// @brief 最小二乘估计 \n
+///        least square estimation
+/// @param A 设计矩阵的转置（状态值）
+/// @param y 观测值，列向量
+/// @param n 待估参数数量
+/// @param m 观测方程个数
+/// @param x 待估参数
+/// @param Q 设计矩阵的协方差阵？
+/// @return 
 extern int lsq(const double *A, const double *y, int n, int m, double *x,
                double *Q)
 {
@@ -1578,6 +1622,16 @@ extern double str2num(const char *s, int i, int n)
 *          gtime_t *t       O   gtime_t struct
 * return : status (0:ok,0>:error)
 *-----------------------------------------------------------------------------*/
+
+/// @brief 字符串转时间戳（秒数）
+///        string to time
+/// @details ？？？ \n
+///          convert substring in string to gtime_t struct
+/// @param s 
+/// @param i 
+/// @param n 
+/// @param t 
+/// @return 
 extern int str2time(const char *s, int i, int n, gtime_t *t)
 {
     double ep[6];
@@ -1592,12 +1646,15 @@ extern int str2time(const char *s, int i, int n, gtime_t *t)
     *t=epoch2time(ep);
     return 0;
 }
-/* convert calendar day/time to time -------------------------------------------
-* convert calendar day/time to gtime_t struct
-* args   : double *ep       I   day/time {year,month,day,hour,min,sec}
-* return : gtime_t struct
-* notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
-*-----------------------------------------------------------------------------*/
+
+/// @brief 日历时间转化为时间戳 \n
+///        convert calendar day/time to time
+/// @details convert calendar day/time to gtime_t struct
+/// @param [in] ep 日历时间（年月日时分秒） \n
+///             day/time {year,month,day,hour,min,sec}
+/// @return 时间戳 （秒数）
+///         gtime_t struct ()
+/// @note proper in 1970-2037 or 1970-2099 (64bit time_t)
 extern gtime_t epoch2time(const double *ep)
 {
     const int doy[]={1,32,60,91,121,152,182,213,244,274,305,335};
@@ -2999,13 +3056,16 @@ static int cmpobs(const void *p1, const void *p2)
     double tt=timediff(q1->time,q2->time);
     if (fabs(tt)>DTTOL) return tt<0?-1:1;
     if (q1->rcv!=q2->rcv) return (int)q1->rcv-(int)q2->rcv;
-    return (int)q1->sat-(int)q2->sat;
+	return (int)q1->sat-(int)q2->sat;
 }
 /* sort and unique observation data --------------------------------------------
 * sort and unique observation data by time, rcv, sat
 * args   : obs_t *obs    IO     observation data
 * return : number of epochs
 *-----------------------------------------------------------------------------*/
+
+/// @brief 整理观测值
+/// @details 排序、删除重复的观测值
 extern int sortobs(obs_t *obs)
 {
     int i,j,n;
@@ -3014,7 +3074,7 @@ extern int sortobs(obs_t *obs)
 
     if (obs->n<=0) return 0;
 
-    qsort(obs->data,obs->n,sizeof(obsd_t),cmpobs);
+	qsort(obs->data,obs->n,sizeof(obsd_t),cmpobs);
 
     /* delete duplicated data */
     for (i=j=0;i<obs->n;i++) {
@@ -3494,6 +3554,13 @@ extern int reppaths(const char *path, char *rpath[], int nmax, gtime_t ts,
 * return : geometric distance (m) (0>:error/no satellite position)
 * notes  : distance includes sagnac effect correction
 *-----------------------------------------------------------------------------*/
+
+/// @brief 几何距离
+///        geometric distance
+/// @param rs 卫星位置
+/// @param rr 接收机位置
+/// @param e 接收机到卫星的单位向量
+/// @return 卫星和接收机的几何距离
 extern double geodist(const double *rs, const double *rr, double *e)
 {
     double r;
@@ -3501,8 +3568,10 @@ extern double geodist(const double *rs, const double *rr, double *e)
 
     if (norm(rs,3)<RE_WGS84) return -1.0;
     for (i=0;i<3;i++) e[i]=rs[i]-rr[i];
-    r=norm(e,3);
-    for (i=0;i<3;i++) e[i]/=r;
+    r=norm(e,3); // 距离
+    for (i=0;i<3;i++) e[i]/=r; // 接收机到卫星的单位向量
+    // 补偿地球自转产生的位置改变
+    // 萨格纳克效应改正(E.3.8b)
     return r+OMGE*(rs[0]*rr[1]-rs[1]*rr[0])/CLIGHT;
 }
 /* satellite azimuth/elevation angle -------------------------------------------
@@ -3513,6 +3582,12 @@ extern double geodist(const double *rs, const double *rr, double *e)
 *                               (0.0<=azel[0]<2*pi,-pi/2<=azel[1]<=pi/2)
 * return : elevation angle (rad)
 *-----------------------------------------------------------------------------*/
+
+/// @brief 计算卫星的方位角和高度角
+/// @param pos 接收机位置
+/// @param e 接收机到卫星的单位向量
+/// @param azel 方位角和高度角
+/// @return 高度角
 extern double satazel(const double *pos, const double *e, double *azel)
 {
     double az=0.0,el=PI/2.0,enu[3];

@@ -274,6 +274,10 @@ void __fastcall TMainForm::BtnOptionClick(TObject *Sender)
     UpdateEnable();
 }
 // callback on button-execute -----------------------------------------------
+
+/// @brief 执行按钮时回调
+/// @param Sender 
+/// @return 
 void __fastcall TMainForm::BtnExecClick(TObject *Sender)
 {
     AnsiString OutputFile_Text=OutputFile->Text;
@@ -741,7 +745,11 @@ void __fastcall TMainForm::SetOutFile(void)
     for (p=ofile;*p;p++) if (*p=='*') *p='0';
     OutputFile->Text=ofile;
 }
-// execute post-processing --------------------------------------------------
+
+/// @brief 执行事后处理 \n
+///        execute post-processing
+/// @param  
+/// @return 
 int __fastcall TMainForm::ExecProc(void)
 {
     AnsiString InputFile1_Text=InputFile1->Text,InputFile2_Text=InputFile2->Text;

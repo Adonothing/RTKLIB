@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------------
+﻿/*------------------------------------------------------------------------------
 * rinex.c : RINEX functions
 *
 *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
@@ -136,7 +136,7 @@ static const int navsys[RNX_NUMSYS]={ /* satellite systems */
 /* Satellite system codes, nul terminated. RNX_SYS_ */
 static const char syscodes[RNX_NUMSYS+1]="GREJSCI";
 
-static const char obscodes[]="CLDS";    /* observation type codes */
+static const char obstypecodes[]="CLDS";    /* observation type codes */
 
 static const double ura_eph[]={         /* RAa values (ref [3] 20.3.3.3.1.1) */
     2.4,3.4,4.85,6.85,9.65,13.65,24.0,48.0,96.0,192.0,384.0,768.0,1536.0,
@@ -147,14 +147,40 @@ static const double ura_nominal[]={     /* URA nominal values */
     2048.0,4096.0,8192.0
 };
 /* type definition -----------------------------------------------------------*/
-typedef struct {                        /* signal index type */
-    int n;                              /* number of index */
-    int idx[MAXOBSTYPE];                /* signal freq-index */
-    int pos[MAXOBSTYPE];                /* signal index in obs data (-1:no) */
-    uint8_t pri [MAXOBSTYPE];           /* signal priority (15-0) */
-    uint8_t type[MAXOBSTYPE];           /* type (0:C,1:L,2:D,3:S) */
-    uint8_t code[MAXOBSTYPE];           /* obs-code (CODE_L??) */
-    double shift[MAXOBSTYPE];           /* phase shift (cycle) */
+
+/// @brief 信号类型定义 \n
+///        signal index type
+/// @details 单颗卫星（一行数据）的数据类型定义
+typedef struct
+{
+    /// @brief   索引数量 \n
+    ///          number of index
+    /// @details 单颗卫星（一行数据）的数据类型总数
+    int n;
+    
+    /// @brief   信号频率索引 \n
+    ///          signal freq-index
+    int idx[MAXOBSTYPE];
+    
+    /// @brief   ？？？ \n
+    ///          signal index in obs data (-1:no)
+    int pos[MAXOBSTYPE]; 
+    
+    /// @brief   信号优先级 \n
+    ///          signal priority (15-0)
+    uint8_t pri [MAXOBSTYPE];
+    
+    /// @brief   信号类型(0:C,1:L,2:D,3:S) \n
+    ///          type (0:C,1:L,2:D,3:S)
+    uint8_t type[MAXOBSTYPE];
+    
+    /// @brief   观测码 \n
+    ///          obs-code (CODE_L??)
+    uint8_t code[MAXOBSTYPE];
+    
+    /// @brief   移相（周） \n
+    ///          phase shift (cycle)
+    double shift[MAXOBSTYPE];
 } sigind_t;
 
 /* set string without tail space ---------------------------------------------*/
@@ -354,7 +380,16 @@ static void convcode(double ver, int sys, const char *str, char *type)
     }
     trace(3,"convcode: ver=%.2f sys=%2d type= %s -> %s\n",ver,sys,str,type);
 }
-/* decode RINEX observation data file header ---------------------------------*/
+
+/// @brief 对RINEX观测数据文件头进行解码 \n
+///        decode RINEX observation data file header
+/// @param fp 
+/// @param buff 
+/// @param ver 
+/// @param tsys 
+/// @param tobs 
+/// @param nav 
+/// @param sta 
 static void decode_obsh(FILE *fp, char *buff, double ver, int *tsys,
                         char tobs[][MAXOBSTYPE][4], nav_t *nav, sta_t *sta)
 {
@@ -706,7 +741,16 @@ static int readrnxh(FILE *fp, double *ver, char *type, int *sys, int *tsys,
     }
     return 0;
 }
-/* decode observation epoch --------------------------------------------------*/
+
+/// @brief 解码观测历元
+///        decode_obsepoch
+/// @param fp   文件指针
+/// @param buff 字符串
+/// @param ver 
+/// @param time 
+/// @param flag 
+/// @param sats 
+/// @return 
 static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
                            int *flag, int *sats)
 {
@@ -763,7 +807,21 @@ static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
     trace(4,"decode_obsepoch: time=%s flag=%d\n",time_str(*time,3),*flag);
     return n;
 }
-/* decode observation data ---------------------------------------------------*/
+
+/// @brief 解码观测数据 \n
+///        decode observation data
+/// @details 将一个历元的一颗卫星数据（RIBNEX文件的一行）拆分到数组里。
+///          依据为结构体中定义的顺序。
+/// @param fp 文件指针
+/// @param buff 字符串
+/// @param ver 
+/// @param mask 
+/// @param index 
+/// @param obs 观测数据
+/// @return 0 or 1
+/// @note 该函数并未在头文件中声明，仅在本文件中使用
+/// @details 信号按照 obscodes 的顺序存储。
+/// @see obscodes
 static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
                           sigind_t *index, obsd_t *obs)
 {
@@ -784,12 +842,14 @@ static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
         trace(4,"decode_obsdata: unsupported sat sat=%s\n",satid);
         stat=0;
     }
-    else if (!(satsys(obs->sat,NULL)&mask)) {
+	else if (!(satsys(obs->sat,NULL)&mask)) {
         stat=0;
-    }
-    /* read observation data fields */
-    switch (satsys(obs->sat,NULL)) {
-        case SYS_GLO: ind=index+1; break;
+	}
+	/* read observation data fields */
+	int navigation_system = satsys(obs->sat,NULL);
+	switch (navigation_system)
+	{
+		case SYS_GLO: ind=index+1; break;
         case SYS_GAL: ind=index+2; break;
         case SYS_QZS: ind=index+3; break;
         case SYS_SBS: ind=index+4; break;
@@ -899,7 +959,7 @@ static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
         trace(4, "obs: i=%d f=%d P=%14.3f L=%14.3f LLI=%d code=%d\n",i,p[i],obs->P[p[i]],
         obs->L[p[i]],obs->LLI[p[i]],obs->code[p[i]]);
     }
-    trace(4,"decode_obsdata: time=%s sat=%2d\n",time_str(obs->time,0),obs->sat);
+	trace(4,"decode_obsdata: time=%s sat=%2d\n",time_str(obs->time,0),obs->sat);
     return 1;
 }
 /* save cycle slips ----------------------------------------------------------*/
@@ -968,7 +1028,7 @@ static void set_index(double ver, int sys, const char *opt,
 
     for (i=n=0;*tobs[i];i++,n++) {
         ind->code[i]=obs2code(tobs[i]+1);
-        ind->type[i]=(p=strchr(obscodes,tobs[i][0]))?(int)(p-obscodes):0;
+        ind->type[i]=(p=strchr(obstypecodes,tobs[i][0]))?(int)(p-obstypecodes):0;
         ind->idx[i]=code2idx(sys,ind->code[i]);
         ind->pri[i]=getcodepri(sys,ind->code[i],opt);
         ind->pos[i]=-1;
@@ -1032,6 +1092,20 @@ static void set_index(double ver, int sys, const char *opt,
 #endif
 }
 /* read RINEX observation data body ------------------------------------------*/
+
+/// @brief 读RINEX观测文件数数据主体 \n
+///        read RINEX observation data body
+/// @param fp 文件指针
+/// @param opt 
+/// @param ver  
+/// @param tsys 
+/// @param tobs 
+/// @param flag 
+/// @param data 
+/// @param sta 
+/// @return
+/// @details 核心为：decode_obsdata：观测数据解算、decode_obsh：观测数据头解算
+/// @see decode_obsdata、decode_obsh
 static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
                        char tobs[][MAXOBSTYPE][4], int *flag, obsd_t *data,
                        sta_t *sta)
@@ -1085,18 +1159,36 @@ static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
             data[n].sat=(uint8_t)sats[i-1];
 
             /* decode RINEX observation data */
-            if (decode_obsdata(fp,buff,ver,mask,index,data+n)) n++;
-        }
+            // 对RINEX观测数据进行解码
+			if (decode_obsdata(fp,buff,ver,mask,index,data+n)) n++;
+		}
         else if (*flag==3||*flag==4) { /* new site or header info follows */
 
             /* decode RINEX observation data file header */
-            decode_obsh(fp,buff,ver,tsys,tobs,NULL,sta);
+            // 对RINEX观测数据文件头进行解码
+			decode_obsh(fp,buff,ver,tsys,tobs,NULL,sta);
         }
         if (++i>nsat) return n;
     }
     return -1;
 }
-/* read RINEX observation data -----------------------------------------------*/
+
+/// @brief 读RINEX观测数据
+///        read RINEX observation data
+/// @param fp 
+/// @param ts 
+/// @param te 
+/// @param tint 
+/// @param opt 
+/// @param rcv 
+/// @param ver 
+/// @param tsys 
+/// @param tobs 
+/// @param obs 
+/// @param sta 
+/// @return 
+/// @details 核心为：readrnxobsb：读RINEX观测文件数数据主体
+/// @see readrnxobsb
 static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
                       const char *opt, int rcv, double ver, int *tsys,
                       char tobs[][MAXOBSTYPE][4], obs_t *obs, sta_t *sta)
@@ -1575,6 +1667,22 @@ static int readrnxclk(FILE *fp, const char *opt, double ver, int index, nav_t *n
     return nav->nc>0;
 }
 /* read RINEX file -----------------------------------------------------------*/
+
+/// @brief read RINEX file
+///        读RINEX文件
+/// @details 读观测文件、导航电文文件、钟差文件
+/// @param fp 
+/// @param ts 
+/// @param te 
+/// @param tint 
+/// @param opt 
+/// @param flag 
+/// @param index 
+/// @param type 
+/// @param obs 
+/// @param nav 
+/// @param sta 
+/// @return 
 static int readrnxfp(FILE *fp, gtime_t ts, gtime_t te, double tint,
                      const char *opt, int flag, int index, char *type,
                      obs_t *obs, nav_t *nav, sta_t *sta)
@@ -1605,7 +1713,21 @@ static int readrnxfp(FILE *fp, gtime_t ts, gtime_t te, double tint,
     trace(2,"unsupported rinex type ver=%.2f type=%c\n",ver,*type);
     return 0;
 }
-/* uncompress and read RINEX file --------------------------------------------*/
+
+/// @brief 解压缩并读取RINEX文件
+///        uncompress and read RINEX file
+/// @param file 
+/// @param ts 
+/// @param te 
+/// @param tint 
+/// @param opt 
+/// @param flag 
+/// @param index 
+/// @param type 
+/// @param obs 
+/// @param nav 
+/// @param sta 
+/// @return 
 static int readrnxfile(const char *file, gtime_t ts, gtime_t te, double tint,
                        const char *opt, int flag, int index, char *type,
                        obs_t *obs, nav_t *nav, sta_t *sta)
@@ -1710,6 +1832,21 @@ extern int rnxcomment(rnxopt_t *opt, const char *format, ...) {
 *                               (sys=G:GPS,R:GLO,E:GAL,J:QZS,C:BDS,I:IRN,S:SBS)
 *
 *-----------------------------------------------------------------------------*/
+
+/// @brief 读观测文件和导航电文
+///        read RINEX OBS and NAV files
+/// @param file 
+/// @param rcv 
+/// @param ts 
+/// @param te 
+/// @param tint 
+/// @param opt 
+/// @param obs 
+/// @param nav 
+/// @param sta 
+/// @return 
+/// @details 解压：readrnxfp或者直接读取：readrnxfile
+/// @see readrnxfp、readrnxfile
 extern int readrnxt(const char *file, int rcv, gtime_t ts, gtime_t te,
                     double tint, const char *opt, obs_t *obs, nav_t *nav,
                     sta_t *sta)

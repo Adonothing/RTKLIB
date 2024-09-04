@@ -137,12 +137,16 @@ extern "C" {
 #define TSYS_IRN    6                   /* time system: IRNSS time */
 
 #ifndef NFREQ
-#define NFREQ       3                   /* number of carrier frequencies */
+/// @brief 载波频率数 \n
+///        number of carrier frequencies
+#define NFREQ 3
 #endif
 #define NFREQGLO    2                   /* number of carrier frequencies of GLONASS */
 
 #ifndef NEXOBS
-#define NEXOBS      0                   /* number of extended obs codes */
+/// @brief 扩展观测值的数量 \n
+///        number of extended obs codes
+#define NEXOBS 0 
 #endif
 
 #define SNR_UNIT    0.001               /* SNR unit (dBHz) */
@@ -561,21 +565,69 @@ typedef struct {        /* time struct */
     double sec;         /* fraction of second under 1 s */
 } gtime_t;
 
-typedef struct {        /* observation data record */
-    gtime_t time;       /* receiver sampling time (GPST) */
-    uint8_t sat,rcv;    /* satellite/receiver number */
-    uint16_t SNR[NFREQ+NEXOBS]; /* signal strength (0.001 dBHz) */
-    uint8_t  LLI[NFREQ+NEXOBS]; /* loss of lock indicator */
-    uint8_t code[NFREQ+NEXOBS]; /* code indicator (CODE_???) */
-    double L[NFREQ+NEXOBS]; /* observation data carrier-phase (cycle) */
-    double P[NFREQ+NEXOBS]; /* observation data pseudorange (m) */
-    float  D[NFREQ+NEXOBS]; /* observation data doppler frequency (Hz) */
+/// @brief 观测数据记录 \n
+///        observation data record
+typedef struct
+{
+    /// @brief   接收机采样时间 \n
+    ///          receiver sampling time (GPST)
+    /// @details GPST：GPS时，UTC时间保持一致，起点为1980年1月6日0时0分0秒。
+    ///          实际使用过程中是Unix系统时，起点为1970年1月1日0时0分0秒。
+    gtime_t time;
 
-    int timevalid;      /* time is valid (Valid GNSS fix) for time mark */
-    gtime_t eventime;   /* time of event (GPST) */
-    uint8_t Lstd[NFREQ+NEXOBS]; /* stdev of carrier phase (0.004 cycles)  */
-    uint8_t Pstd[NFREQ+NEXOBS]; /* stdev of pseudorange (0.01*2^(n+5) meters) */
-    uint8_t freq; /* GLONASS frequency channel (0-13) */
+    /// @brief   卫星编号 \n
+    ///          satellite number
+    uint8_t sat; ///< satellite number
+
+    /// @brief   接收机编号 \n
+    ///          receiver number
+    uint8_t rcv;
+
+    /// @brief   信号强度 \n
+    ///          signal strength
+    /// @details 单位：0.001 dBHz
+    uint16_t SNR[NFREQ + NEXOBS];
+
+    /// @brief   失锁指示器 \n
+    ///          loss of lock indicator
+    uint8_t  LLI[NFREQ + NEXOBS];
+
+    /// @brief   代码指示器？ \n
+    ///          code indicator (CODE_???)
+    uint8_t code[NFREQ + NEXOBS];
+
+    /// @brief   载波相位观测值 \n
+    ///          observation data carrier-phase (cycle)
+    double L[NFREQ + NEXOBS];
+
+    /// @brief   伪距观测值 \n
+    ///          observation data pseudorange (m)
+    double P[NFREQ + NEXOBS];
+
+    /// @brief   多普勒观测值 \n
+    ///          observation data doppler frequency (Hz)
+    float  D[NFREQ + NEXOBS];
+
+
+    /// @brief   ？？？ \n
+    ///          time is valid (Valid GNSS fix) for time mark
+    int timevalid;
+
+    /// @brief   ？？？ \n
+    ///          time of event (GPST)
+    gtime_t eventime;
+
+    /// @brief   ？？？ \n
+    ///          stdev of carrier phase (0.004 cycles)
+    uint8_t Lstd[NFREQ + NEXOBS]; /* stdev of carrier phase (0.004 cycles)  */
+
+    /// @brief   ？？？ \n
+    ///          stdev of pseudorange (0.01*2^(n+5) meters)
+    uint8_t Pstd[NFREQ + NEXOBS];
+
+    /// @brief   GLONASS导航系统频率通道 \n
+    ///          GLONASS frequency channel (0-13)
+    uint8_t freq;
 
 } obsd_t;
 
@@ -879,21 +931,42 @@ typedef struct {        /* station parameter type */
     double glo_cp_bias[4]; /* GLONASS code-phase biases {1C,1P,2C,2P} (m) */
 } sta_t;
 
-typedef struct {        /* solution type */
+/// @brief 结果
+///        solution type
+typedef struct
+{
     gtime_t time;       /* time (GPST) */
     gtime_t eventime;   /* time of event (GPST) */
-    double rr[6];       /* position/velocity (m|m/s) */
-                        /* {x,y,z,vx,vy,vz} or {e,n,u,ve,vn,vu} */
-    float  qr[6];       /* position variance/covariance (m^2) */
-                        /* {c_xx,c_yy,c_zz,c_xy,c_yz,c_zx} or */
-                        /* {c_ee,c_nn,c_uu,c_en,c_nu,c_ue} */
-    float  qv[6];       /* velocity variance/covariance (m^2/s^2) */
+
+    /// @brief 位置和速度 \n
+    ///        position/velocity (m|m/s)
+    /// @details {x,y,z,vx,vy,vz} or {e,n,u,ve,vn,vu}
+    double rr[6];
+    
+    /// @brief 位置估计协方差阵 \n
+    ///        position variance/covariance (m^2)
+    /// @details {c_xx,c_yy,c_zz,c_xy,c_yz,c_zx} or {c_ee,c_nn,c_uu,c_en,c_nu,c_ue}
+    float  qr[6];
+
+    /// @brief 速度估计协方差阵 \n
+    ///        velocity variance/covariance (m^2/s^2)
+    float  qv[6];
+
     double dtr[6];      /* receiver clock bias to time systems (s) */
     uint8_t type;       /* type (0:xyz-ecef,1:enu-baseline) */
     uint8_t stat;       /* solution status (SOLQ_???) */
-    uint8_t ns;         /* number of valid satellites */
-    float age;          /* age of differential (s) */
-    float ratio;        /* AR ratio factor for validation */
+
+    /// @brief 有效卫星数 \n
+    ///        number of valid satellites    
+    uint8_t ns;
+
+    /// @brief 差分龄期？？？ \n
+    ///        ge of differential (s)        
+    float age;
+
+    /// @brief 模糊度固定Rotio值 \n
+    ///        AR ratio factor for validation      
+    float ratio;
     float prev_ratio1;  /* previous initial AR ratio factor for validation */
     float prev_ratio2;  /* previous final AR ratio factor for validation */
     float thres;        /* AR ratio threshold for validation */
@@ -1808,10 +1881,29 @@ EXPORT int lambda_reduction(int n, const double *Q, double *Z);
 EXPORT int lambda_search(int n, int m, const double *a, const double *Q,
                          double *F, double *s);
 
-/* standard positioning ------------------------------------------------------*/
-EXPORT int pntpos(const obsd_t *obs, int n, const nav_t *nav,
-                  const prcopt_t *opt, sol_t *sol, double *azel,
-                  ssat_t *ssat, char *msg);
+/// @brief  标准定位 \n
+///         standard positioning
+/// @param  [in]     obs  OBS观测数据 \n
+///                       observation data  
+/// @param  [in]     n    OBS数 \n
+///                       number of observation data
+/// @param  [in]     nav  NAV导航电文数据 \n
+///                       navigation data
+/// @param  [in]     opt  处理过程选项 \n
+///                       processing options
+/// @param  [in,out] sol  结果 \n
+///                       solution
+/// @param  [in,out] azel 方位角和俯仰角 \n
+///                       azimuth/elevation angle (rad) (NULL: no output)
+/// @param  [in,out] ssat 卫星状态 \n
+///                       satellite status
+/// @param  [out]    msg  错误信息 \n
+///                       error message for error exit
+/// @return 状态（1：正常，0：错误）
+///         status(1:ok,0:error)
+EXPORT int pntpos(const obsd_t   *obs,  int   n,    const nav_t *nav,
+                  const prcopt_t *opt,  sol_t *sol, double      *azel,
+                  ssat_t         *ssat, char  *msg);
 
 /* precise positioning -------------------------------------------------------*/
 EXPORT void rtkinit(rtk_t *rtk, const prcopt_t *opt);
